@@ -1,0 +1,3 @@
+https://supabase.com/dashboard/project/bswbhpwgidebndwjsoix/auth/templates { for control panel } password { @12345Amit }
+
+https://app.netlify.com/projects/whimandwonder/overview  {for website updates } 
