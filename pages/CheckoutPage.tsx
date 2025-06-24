@@ -62,7 +62,8 @@ const CheckoutPage: React.FC = () => {
 
     try {
       // --- UPDATED PART 1: Use the environment variable for the backend URL ---
-      const API_URL = import.meta.env.VITE_API_BASE_URL;
+      // Change this line
+      const RAZORPAY_KEY = import.meta.env.REACT_APP_RAZORPAY_KEY_ID; 
       if (!API_URL) {
         throw new Error("API URL is not configured. Please set VITE_API_BASE_URL.");
       }
