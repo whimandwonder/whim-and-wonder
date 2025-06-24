@@ -18,7 +18,7 @@ const HomePage: React.FC = () => {
       {/* Banner Section (Remains at the top) */}
       <Banner 
         title="Discover Whim & Wonder"
-        subtitle="Unique finds for every corner of your life. Explore our latest arrivals!"
+        subtitle="Unique finds for every corner of your life. Explore our latest arrivals"
         imageUrl="/images/final-whim.jpg"
         buttonText="Shop Now"
         buttonLink={ROUTE_PATHS.PRODUCTS}
