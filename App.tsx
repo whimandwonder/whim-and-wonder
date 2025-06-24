@@ -1,4 +1,4 @@
-// src/App.tsx
+// src/App.tsx - THE FINAL, COMPLETE VERSION
 
 import TestimonialsPage from './pages/TestimonialsPage';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
@@ -18,14 +18,13 @@ import NotFoundPage from './pages/NotFoundPage';
 import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
 import RefundPolicyPage from './pages/RefundPolicyPage';
 import ShippingPolicyPage from './pages/ShippingPolicyPage';
+import OrderConfirmationPage from './pages/OrderConfirmationPage'; // <-- IMPORT ADDED
 
-// --- STEP 1: IMPORT THE AUTH PROVIDER ---
 import { AuthProvider } from './context/AuthContext';
 
 
 function App() {
   return (
-    // --- STEP 2: WRAP YOUR ENTIRE APP WITH THE AUTH PROVIDER ---
     <AuthProvider>
       <Router>
         <div className="flex flex-col min-h-screen">
@@ -48,6 +47,9 @@ function App() {
               
               <Route path="/cart" element={<CartPage />} />
               
+              {/* --- NEW ROUTE ADDED HERE --- */}
+              <Route path="/order-confirmation" element={<OrderConfirmationPage />} />
+
               {/* --- Protected Routes (they now have access to context) --- */}
               <Route element={<ProtectedRoute />}>
                 <Route path="/checkout" element={<CheckoutPage />} />
