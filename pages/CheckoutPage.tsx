@@ -12,7 +12,7 @@ const CheckoutPage: React.FC = () => {
   const [customerInfo, setCustomerInfo] = useState<CustomerInfo>({ name: '', email: '', phone: '' });
   const [shippingAddress, setShippingAddress] = useState<Address>({ street: '', city: '', state: '', zipCode: '', country: 'India' });
   const [step, setStep] = useState<number>(1);
-  const [isPlacingOrder, setIsPlacingOrder] = useState(false); // To prevent double clicks
+  const [isPlacingOrder, setIsPlacingOrder] = useState(false);
   
   if (cart.length === 0 && step !== 4) {
     setTimeout(() => navigate(ROUTE_PATHS.HOME), 0);
@@ -49,8 +49,9 @@ const CheckoutPage: React.FC = () => {
     });
   };
 
+  // --- THIS IS THE NEW, CORRECTED FUNCTION ---
   const handlePlaceOrder = async () => {
-    if (isPlacingOrder) return; // Prevent user from clicking multiple times
+    if (isPlacingOrder) return;
     setIsPlacingOrder(true);
 
     const scriptLoaded = await loadRazorpayScript();
@@ -61,27 +62,27 @@ const CheckoutPage: React.FC = () => {
     }
 
     try {
-      // --- UPDATED PART 1: Use the environment variable for the backend URL ---
-      // Change this line
-      const RAZORPAY_KEY = import.meta.env.REACT_APP_RAZORPAY_KEY_ID; 
+      // Correctly get the API URL from Netlify's environment variables
+      const API_URL = import.meta.env.VITE_API_BASE_URL;
       if (!API_URL) {
-        throw new Error("API URL is not configured. Please set VITE_API_BASE_URL.");
+        throw new Error("API URL is not configured. Please set VITE_API_BASE_URL on Netlify.");
       }
 
+      // Correctly get the Razorpay Key from Netlify's environment variables
+      const RAZORPAY_KEY = import.meta.env.VITE_RAZORPAY_KEY_ID;
+      if (!RAZORPAY_KEY) {
+        throw new Error("Razorpay Key is not configured. Please set VITE_RAZORPAY_KEY_ID on Netlify.");
+      }
+
+      // Call your backend to create a Razorpay order
       const orderResponse = await axios.post(`${API_URL}/create-order`, {
         amount: totalAmount,
       });
       
       const orderData = orderResponse.data;
 
-      // --- UPDATED PART 2: Use the environment variable for the Razorpay LIVE key ---
-      const RAZORPAY_KEY = import.meta.env.VITE_RAZORPAY_KEY_ID;
-      if (!RAZORPAY_KEY) {
-        throw new Error("Razorpay Key is not configured. Please set VITE_RAZORPAY_KEY_ID.");
-      }
-
       const options = {
-        key: RAZORPAY_KEY,
+        key: RAZORPAY_KEY, // Use the key from Netlify
         amount: orderData.amount,
         currency: orderData.currency,
         name: 'Whim & Wonder',
@@ -107,7 +108,7 @@ const CheckoutPage: React.FC = () => {
         },
         modal: {
             ondismiss: function() {
-                setIsPlacingOrder(false); // Allow user to try again if they close the popup
+                setIsPlacingOrder(false);
             }
         }
       };
@@ -215,7 +216,7 @@ const CheckoutPage: React.FC = () => {
           <div className="mt-4 space-y-2">
             <div className="flex justify-between"><span>Subtotal</span><span>₹{totalAmount.toFixed(2)}</span></div>
             <div className="flex justify-between"><span>Shipping</span><span className="text-green-600">FREE</span></div>
-            <div className="flex justify-between font-bold text-lg pt-2 border-t"><span>Total</span><span>₹{totalAmount.toFixed(2)}</span></div>
+            <div a className="flex justify-between font-bold text-lg pt-2 border-t"><span>Total</span><span>₹{totalAmount.toFixed(2)}</span></div>
           </div>
         </div>
       </div>
