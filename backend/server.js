@@ -17,6 +17,8 @@ app.use(express.json()); // Allows our server to understand JSON data
 app.use(cors());
 
 // 4. Initialize Razorpay with your API keys from the .env file
+console.log("SERVER IS USING KEY ID:", process.env.RAZORPAY_KEY_ID);
+console.log("SERVER IS USING KEY SECRET:", process.env.RAZORPAY_KEY_SECRET);
 const razorpay = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID,
   key_secret: process.env.RAZORPAY_KEY_SECRET,
