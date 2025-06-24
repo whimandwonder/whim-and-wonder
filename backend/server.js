@@ -1,3 +1,5 @@
+// backend/server.js - THE FINAL, COMPLETE VERSION
+
 // 1. Import all the necessary packages
 const express = require('express');
 const Razorpay = require('razorpay');
@@ -10,7 +12,7 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // 3. Set up middleware
-app.use(cors()); // Using simple CORS for now
+app.use(cors()); // Use simple CORS
 app.use(express.json());
 
 // 4. Initialize Razorpay with your API keys
@@ -19,8 +21,7 @@ const razorpay = new Razorpay({
   key_secret: process.env.RAZORPAY_KEY_SECRET,
 });
 
-// --- NEW: Initialize Supabase Admin Client ---
-// It uses the new keys you just added to Render
+// 5. Initialize Supabase Admin Client
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
 
 // --- ENDPOINT 1: CREATE RAZORPAY ORDER ---
@@ -43,11 +44,12 @@ app.post('/create-order', async (req, res) => {
   }
 });
 
-// --- NEW: ENDPOINT 2: SAVE THE ORDER TO OUR DATABASE ---
+// --- THIS IS THE MISSING PART: ENDPOINT 2 TO SAVE THE ORDER ---
 app.post('/save-order', async (req, res) => {
   try {
     const { orderDetails } = req.body;
-    console.log("Attempting to save order for user:", orderDetails.userId);
+    
+    console.log("Attempting to save order to Supabase for user:", orderDetails.userId);
 
     const { data, error } = await supabase
       .from('orders')
@@ -65,7 +67,6 @@ app.post('/save-order', async (req, res) => {
       .select();
 
     if (error) {
-      // Re-throw the error to be caught by the catch block
       throw error;
     }
 
@@ -78,8 +79,7 @@ app.post('/save-order', async (req, res) => {
   }
 });
 
-
-// 6. Start the server
+// 7. Start the server
 app.listen(PORT, () => {
   console.log(`Backend server is running on port ${PORT}`);
 });
