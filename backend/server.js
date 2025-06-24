@@ -13,9 +13,8 @@ app.use(express.json()); // Allows our server to understand JSON data
 
 // THIS IS THE UPDATED SECURITY PART
 // It tells your backend to only accept requests from the URL you set in Render's environment variables.
-app.use(cors({
-  origin: process.env.FRONTEND_URL,
-}));
+// --- NEW, SIMPLER CODE ---
+app.use(cors());
 
 // 4. Initialize Razorpay with your API keys from the .env file
 const razorpay = new Razorpay({
