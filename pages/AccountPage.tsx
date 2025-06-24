@@ -1,26 +1,28 @@
-import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { ROUTE_PATHS, MOCK_PRODUCTS } from '../constants'; 
-import { UserProfile, Address, Order as OrderType, CartItem, Product } from '../types';
-import { useAuth } from '../context/AuthContext';
-// --- THIS IS THE FIX: We will use the react-icons library you already have ---
-import { FaUserCog, FaBoxOpen, FaHeart, FaSignOutAlt } from 'react-icons/fa';
+// pages/AccountPage.tsx - FULL AND COMPLETE
 
-// MOCK DATA is kept for now for display purposes
-const MOCK_ORDERS: OrderType[] = [ { id: 'ORD001', items: [{ id: '1', name: 'Magic Vegetable Chopper', price: 19.99, quantity: 1, category: 'Kitchen', imageUrl: 'https://picsum.photos/seed/vegchopper/100/100', description:'', rating:0, reviews:0, stock:0, slug:'magic-vegetable-chopper' }], totalAmount: 19.99, customerInfo: {name: 'John Doe', email:'j@d.com', phone:'123'}, shippingAddress: {street:'123', city:'any', state:'CA', zipCode:'123', country:'US'}, paymentMethod: 'Credit Card', status: 'Delivered', orderDate: new Date('2023-10-01'), estimatedDelivery: new Date('2023-10-05') } ];
-const MOCK_WISHLIST: CartItem[] = MOCK_PRODUCTS.length > 1 ? [ { ...(MOCK_PRODUCTS[0] as Product), quantity: 1, slug: MOCK_PRODUCTS[0].slug }, { ...(MOCK_PRODUCTS[1] as Product), quantity: 1, slug: MOCK_PRODUCTS[1].slug } ] : [];
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import { supabase } from '../supabaseClient'; // Make sure this is imported
+import { UserProfile, Address, Order as OrderType } from '../types';
+import { FaUserCog, FaBoxOpen, FaHeart, FaSignOutAlt } from 'react-icons/fa';
+import { ROUTE_PATHS } from '../constants';
 
 const AccountPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'profile' | 'orders' | 'wishlist'>('profile');
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const navigate = useNavigate();
   const { user, logout, loading } = useAuth();
+  
   const [profileForEdit, setProfileForEdit] = useState<UserProfile | null>(null);
+  const [orders, setOrders] = useState<OrderType[]>([]); // State for real orders
+  const [ordersLoading, setOrdersLoading] = useState(true); // Loading state for orders
 
   useEffect(() => {
     if (!loading && !user) {
       navigate(ROUTE_PATHS.LOGIN);
     }
+    
     if (user) {
       setProfileForEdit({
         id: user.id,
@@ -28,6 +30,29 @@ const AccountPage: React.FC = () => {
         email: user.email || '',
         address: { street: '', city: '', state: '', zipCode: '', country: '' }
       });
+
+      // --- NEW: Function to fetch user's orders ---
+      const fetchOrders = async () => {
+        setOrdersLoading(true);
+        const { data, error } = await supabase
+          .from('orders')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false });
+
+        if (error) {
+          console.error('Error fetching orders:', error);
+          // Set loading to false even if there's an error
+          setOrdersLoading(false);
+        } else if (data) {
+          // You might need to cast the data if types don't match perfectly,
+          // especially for jsonb columns.
+          setOrders(data as any[]); 
+          setOrdersLoading(false);
+        }
+      };
+
+      fetchOrders();
     }
   }, [user, loading, navigate]);
 
@@ -62,7 +87,6 @@ const AccountPage: React.FC = () => {
     );
   }
 
-  // --- THE FIX PART 2: The icon property now holds the actual component, not a string ---
   const sidebarTabs = [
     { key: 'profile', label: 'Profile Settings', icon: FaUserCog, action: () => setActiveTab('profile') },
     { key: 'orders', label: 'Order History', icon: FaBoxOpen, action: () => setActiveTab('orders') },
@@ -108,7 +132,7 @@ const AccountPage: React.FC = () => {
                   <input type="text" name="country" id="profileCountry" value={profileForEdit.address?.country || ''} onChange={handleProfileChange} className="mt-1 block w-full p-2 border rounded-md"/>
                 </div>
                 <div className="flex space-x-3 pt-2">
-                  <button type="submit" className="bg-amazon-yellow text-white font-semibold px-4 py-2 rounded-md hover:opacity-90">Save Changes</button>
+                  <button type="submit" className="bg-orange-500 text-white font-semibold px-4 py-2 rounded-md hover:opacity-90">Save Changes</button>
                   <button type="button" onClick={() => setIsEditingProfile(false)} className="bg-gray-200 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-300">Cancel</button>
                 </div>
               </form>
@@ -124,13 +148,45 @@ const AccountPage: React.FC = () => {
                         <p>{profileForEdit.address.country}</p>
                     </>
                 ) : <p>No address on file. Please add one.</p>}
-                <button onClick={() => setIsEditingProfile(true)} className="mt-4 bg-amazon-blue text-white px-4 py-2 rounded-md hover:bg-amazon-blue-dark">Edit Profile</button>
+                <button onClick={() => setIsEditingProfile(true)} className="mt-4 bg-orange-500 text-white px-4 py-2 rounded-md hover:bg-orange-500">Edit Profile</button>
               </div>
             )}
           </div>
         );
       case 'orders':
-        return ( <div> <h3 className="text-2xl font-semibold text-gray-800 mb-4">Order History</h3> <p>You have no past orders.</p> </div> );
+        if (ordersLoading) {
+            return <div>Loading your orders...</div>;
+        }
+        return (
+          <div>
+            <h3 className="text-2xl font-semibold text-gray-800 mb-4">Order History</h3>
+            {orders.length > 0 ? (
+              <div className="space-y-6">
+                {orders.map((order) => (
+                  <div key={order.id} className="p-4 border rounded-lg shadow-sm bg-gray-50">
+                    <div className="flex justify-between items-center mb-2 flex-wrap">
+                      <p className="font-bold">Order ID: <span className="font-normal">{order.order_id}</span></p>
+                      <p className="text-sm text-gray-600">{new Date(order.created_at).toLocaleDateString()}</p>
+                    </div>
+                    {order.cart_items && (
+                      <div className="mb-2">
+                        <h4 className="font-semibold mt-2">Items:</h4>
+                        <ul className="list-disc list-inside ml-4 text-sm">
+                          {order.cart_items.map((item: any) => (
+                             <li key={item.id}>{item.name} (x{item.quantity}) - ₹{item.price.toFixed(2)}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    <p className="text-right font-bold text-lg mt-2">Total: ₹{order.total_amount.toFixed(2)}</p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p>You have no past orders.</p>
+            )}
+          </div>
+        );
       case 'wishlist':
         return ( <div> <h3 className="text-2xl font-semibold text-gray-800 mb-4">My Wishlist</h3> <p>Your wishlist is empty.</p> </div> );
       default: return null;
@@ -150,9 +206,8 @@ const AccountPage: React.FC = () => {
                   key={tab.key}
                   onClick={tab.action}
                   className={`w-full text-left px-4 py-3 rounded-md flex items-center transition-colors duration-200
-                    ${isActive ? 'bg-amazon-yellow text-white font-semibold' : 'hover:bg-gray-100 text-gray-700'}`}
+                    ${isActive ? 'bg-orange-500 text-white font-semibold' : 'hover:bg-gray-100 text-gray-700'}`}
                 >
-                  {/* --- THE FIX PART 3: Render the icon as a component --- */}
                   <tab.icon className="mr-3 w-5 text-center" /> {tab.label}
                 </button>
               );

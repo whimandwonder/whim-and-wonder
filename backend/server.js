@@ -2,65 +2,82 @@
 const express = require('express');
 const Razorpay = require('razorpay');
 const cors = require('cors');
-require('dotenv').config(); // This loads the variables from .env
+const { createClient } = require('@supabase/supabase-js'); // Import Supabase
+require('dotenv').config();
 
 // 2. Initialize the app and set up a port
 const app = express();
-const PORT = process.env.PORT || 5000; // Use port from Render, or 5000 for local testing
+const PORT = process.env.PORT || 5000;
 
 // 3. Set up middleware
-app.use(express.json()); // Allows our server to understand JSON data
+app.use(cors()); // Using simple CORS for now
+app.use(express.json());
 
-// THIS IS THE UPDATED SECURITY PART
-// It tells your backend to only accept requests from the URL you set in Render's environment variables.
-// --- NEW, SIMPLER CODE ---
-app.use(cors());
-
-// 4. Initialize Razorpay with your API keys from the .env file
-console.log("SERVER IS USING KEY ID:", process.env.RAZORPAY_KEY_ID);
-console.log("SERVER IS USING KEY SECRET:", process.env.RAZORPAY_KEY_SECRET);
+// 4. Initialize Razorpay with your API keys
 const razorpay = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID,
   key_secret: process.env.RAZORPAY_KEY_SECRET,
 });
 
-// 5. Create our "Create Order" endpoint
+// --- NEW: Initialize Supabase Admin Client ---
+// It uses the new keys you just added to Render
+const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
+
+// --- ENDPOINT 1: CREATE RAZORPAY ORDER ---
 app.post('/create-order', async (req, res) => {
   try {
     const { amount } = req.body;
-    
-    // Log the amount we receive from the frontend.
-    console.log('------------------------------------');
-    console.log('Amount received from frontend:', amount);
-
     const options = {
-      amount: Math.round(amount * 100), // Ensure amount is an integer
+      amount: Math.round(amount * 100),
       currency: 'INR',
       receipt: `receipt_order_${new Date().getTime()}`,
     };
-
-    // Log the exact options we are about to send to Razorpay.
-    console.log('Sending these options to Razorpay:', options);
-
-    // Use Razorpay to create the order
     const order = await razorpay.orders.create(options);
-
-    // Log the response we get back from Razorpay.
-    console.log('Razorpay responded with this order:', order);
-    console.log('------------------------------------');
-
     if (!order) {
       return res.status(500).send('Error creating order');
     }
-
     res.json(order);
-
   } catch (error) {
-    // Log any errors that happen during the process.
-    console.error('An error occurred:', error);
+    console.error('Error creating Razorpay order:', error);
     res.status(500).send('Internal Server Error');
   }
 });
+
+// --- NEW: ENDPOINT 2: SAVE THE ORDER TO OUR DATABASE ---
+app.post('/save-order', async (req, res) => {
+  try {
+    const { orderDetails } = req.body;
+    console.log("Attempting to save order for user:", orderDetails.userId);
+
+    const { data, error } = await supabase
+      .from('orders')
+      .insert([
+        { 
+          user_id: orderDetails.userId,
+          order_id: orderDetails.orderId,
+          razorpay_payment_id: orderDetails.razorpay_payment_id,
+          total_amount: orderDetails.totalAmount,
+          customer_info: orderDetails.customerInfo,
+          shipping_address: orderDetails.shippingAddress,
+          cart_items: orderDetails.cart,
+        }
+      ])
+      .select();
+
+    if (error) {
+      // Re-throw the error to be caught by the catch block
+      throw error;
+    }
+
+    console.log('Order saved successfully in Supabase:', data);
+    res.status(200).send({ success: true, order: data });
+
+  } catch (error) {
+    console.error('Error saving order to Supabase:', error);
+    res.status(500).send({ success: false, message: 'Failed to save order.' });
+  }
+});
+
 
 // 6. Start the server
 app.listen(PORT, () => {

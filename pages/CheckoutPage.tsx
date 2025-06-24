@@ -1,12 +1,16 @@
+// pages/CheckoutPage.tsx - FULL AND COMPLETE
+
 import React, { useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { CartContext } from '../context/CartContext';
+import { useAuth } from '../context/AuthContext'; // <-- NEW
 import { ROUTE_PATHS } from '../constants';
 import { CustomerInfo, Address } from '../types';
 
 const CheckoutPage: React.FC = () => {
   const { cart, totalAmount, clearCart } = useContext(CartContext);
+  const { user } = useAuth(); // <-- NEW
   const navigate = useNavigate();
 
   const [customerInfo, setCustomerInfo] = useState<CustomerInfo>({ name: '', email: '', phone: '' });
@@ -49,7 +53,6 @@ const CheckoutPage: React.FC = () => {
     });
   };
 
-  // --- THIS IS THE NEW, CORRECTED FUNCTION ---
   const handlePlaceOrder = async () => {
     if (isPlacingOrder) return;
     setIsPlacingOrder(true);
@@ -62,19 +65,13 @@ const CheckoutPage: React.FC = () => {
     }
 
     try {
-      // Correctly get the API URL from Netlify's environment variables
       const API_URL = 'https://whim-wonder-backend.onrender.com';
-      if (!API_URL) {
-        throw new Error("API URL is not configured. Please set VITE_API_BASE_URL on Netlify.");
-      }
-
-      // Correctly get the Razorpay Key from Netlify's environment variables
       const RAZORPAY_KEY = import.meta.env.VITE_RAZORPAY_KEY_ID;
+      
       if (!RAZORPAY_KEY) {
         throw new Error("Razorpay Key is not configured. Please set VITE_RAZORPAY_KEY_ID on Netlify.");
       }
 
-      // Call your backend to create a Razorpay order
       const orderResponse = await axios.post(`${API_URL}/create-order`, {
         amount: totalAmount,
       });
@@ -82,25 +79,43 @@ const CheckoutPage: React.FC = () => {
       const orderData = orderResponse.data;
 
       const options = {
-        key: RAZORPAY_KEY, // Use the key from Netlify
+        key: RAZORPAY_KEY,
         amount: orderData.amount,
         currency: orderData.currency,
         name: 'Whim & Wonder',
         description: 'Order Payment',
         order_id: orderData.id,
-        handler: function (response: any) {
-          const orderId = `WW-${Date.now()}`;
-          const orderDetails = { 
-            orderId, 
-            totalAmount, 
-            razorpay_payment_id: response.razorpay_payment_id 
-          };
-          clearCart();
-          navigate(ROUTE_PATHS.ORDER_CONFIRMATION, { state: orderDetails });
+        // --- UPDATED HANDLER FUNCTION ---
+        handler: async function (response: any) {
+          try {
+            const orderId = `WW-${Date.now()}`;
+            
+            const fullOrderDetails = {
+              orderId,
+              razorpay_payment_id: response.razorpay_payment_id,
+              totalAmount,
+              customerInfo,
+              shippingAddress,
+              cart,
+              userId: user ? user.id : null, // Pass the user's ID
+            };
+    
+            // Call backend to save the order
+            await axios.post(`${API_URL}/save-order`, { orderDetails: fullOrderDetails });
+    
+            clearCart();
+            navigate(ROUTE_PATHS.ORDER_CONFIRMATION, { state: { orderId, totalAmount } });
+    
+          } catch (saveError) {
+            console.error("Failed to save the order after payment.", saveError);
+            alert("Your payment was successful, but we had trouble saving your order details. Please contact support.");
+            clearCart();
+            navigate(ROUTE_PATHS.ORDER_CONFIRMATION, { state: { orderId: `WW-${Date.now()}`, totalAmount } });
+          }
         },
         prefill: {
           name: customerInfo.name,
-          email: customerInfo.email,
+          email: user?.email || customerInfo.email,
           contact: customerInfo.phone,
         },
         theme: {
@@ -216,7 +231,7 @@ const CheckoutPage: React.FC = () => {
           <div className="mt-4 space-y-2">
             <div className="flex justify-between"><span>Subtotal</span><span>₹{totalAmount.toFixed(2)}</span></div>
             <div className="flex justify-between"><span>Shipping</span><span className="text-green-600">FREE</span></div>
-            <div a className="flex justify-between font-bold text-lg pt-2 border-t"><span>Total</span><span>₹{totalAmount.toFixed(2)}</span></div>
+            <div className="flex justify-between font-bold text-lg pt-2 border-t"><span>Total</span><span>₹{totalAmount.toFixed(2)}</span></div>
           </div>
         </div>
       </div>
