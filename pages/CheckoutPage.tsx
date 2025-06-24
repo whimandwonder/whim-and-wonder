@@ -63,7 +63,7 @@ const CheckoutPage: React.FC = () => {
 
     try {
       // Correctly get the API URL from Netlify's environment variables
-      const API_URL = import.meta.env.VITE_API_BASE_URL;
+      const API_URL = 'https://whim-wonder-backend.onrender.com';
       if (!API_URL) {
         throw new Error("API URL is not configured. Please set VITE_API_BASE_URL on Netlify.");
       }
