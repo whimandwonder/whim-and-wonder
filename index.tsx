@@ -1,9 +1,12 @@
-import { AuthProvider } from './context/AuthContext'; // We will use this
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
 import './index.css';
 import { CartProvider } from './context/CartContext';
+import { AuthProvider } from './context/AuthContext';
+// --- ADDITION ---
+// This line was added to import the Toaster component from the library.
+import { Toaster } from 'react-hot-toast';
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
@@ -12,13 +15,15 @@ if (!rootElement) {
 
 const root = ReactDOM.createRoot(rootElement);
 
-// This is the only part that changes
 root.render(
   <React.StrictMode>
-    <AuthProvider> {/* <-- Step 1: Add the opening tag here */}
+    <AuthProvider>
       <CartProvider>
+        {/* --- ADDITION --- */}
+        {/* This <Toaster /> component is what allows notifications to be displayed. */}
+        <Toaster />
         <App />
       </CartProvider>
-    </AuthProvider> {/* <-- Step 2: Add the closing tag here */}
+    </AuthProvider>
   </React.StrictMode>
 );

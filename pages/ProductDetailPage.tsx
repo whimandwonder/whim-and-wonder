@@ -5,6 +5,9 @@ import StarRating from '../components/StarRating';
 import { CartContext } from '../context/CartContext';
 import { ROUTE_PATHS, MOCK_PRODUCTS } from '../constants';
 import ProductCard from '../components/ProductCard'; // We need this for the related products
+// --- ADDITION ---
+// This line was added to use the notification library.
+import toast from 'react-hot-toast';
 
 interface ProductDetailPageProps {}
 
@@ -34,17 +37,22 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = () => {
   
   const galleryImages = [product.imageUrl, ...(product.images || [])];
   
-  // --- NEW: Logic to find related products ---
   const relatedProducts = MOCK_PRODUCTS.filter(
     p => p.category === product.category && p.id !== product.id
   ).slice(0, 4);
 
+  // --- MODIFICATION ---
+  // The handleAddToCart function was updated to use 'toast' instead of 'alert'.
   const handleAddToCart = () => {
+    if (!product) return; // Safety check
     addToCart(product, quantity);
-    alert(`${quantity} x ${product.name} added to cart!`);
+    toast.success(`${quantity} x ${product.name} added to cart!`, {
+        position: "bottom-center",
+    });
   };
 
   const handleBuyNow = () => {
+    if (!product) return; // Safety check
     addToCart(product, quantity);
     navigate(ROUTE_PATHS.CART);
   };
@@ -54,14 +62,16 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = () => {
       <div className="container mx-auto p-4 md:p-8">
         <div className="grid grid-cols-1 md:grid-cols-2 md:gap-12">
           
-          {/* --- LEFT COLUMN: STICKY IMAGE GALLERY --- */}
-          <div className="md:sticky md:top-8 self-start">
+          {/* --- MODIFICATION --- 
+              Changed md:top-8 to md:top-28 to account for the height of the sticky header.
+          */}
+          <div className="md:sticky md:top-28 self-start">
             <div className="flex flex-col items-center">
-              <img src={selectedImage} alt={product.name} className="w-full max-w-md h-auto object-contain rounded-lg shadow-md mb-4" style={{maxHeight: '450px'}} />
+              <img src={selectedImage} alt={product?.name} className="w-full max-w-md h-auto object-contain rounded-lg shadow-md mb-4" style={{maxHeight: '450px'}} />
               {galleryImages.length > 1 && (
                 <div className="flex space-x-2 overflow-x-auto p-2 w-full justify-center">
                   {galleryImages.map((img, index) => (
-                    <img key={index} src={img} alt={`${product.name} thumbnail ${index + 1}`} className={`w-20 h-20 object-cover rounded-md cursor-pointer border-2 ${selectedImage === img ? 'border-amazon-yellow' : 'border-transparent hover:border-gray-400'}`} onClick={() => setSelectedImage(img)} />
+                    <img key={index} src={img} alt={`${product?.name} thumbnail ${index + 1}`} className={`w-20 h-20 object-cover rounded-md cursor-pointer border-2 ${selectedImage === img ? 'border-amazon-yellow' : 'border-transparent hover:border-gray-400'}`} onClick={() => setSelectedImage(img)} />
                   ))}
                 </div>
               )}
@@ -72,7 +82,6 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = () => {
           <div>
             <h1 className="text-xl md:text-2xl font-medium text-gray-800 mb-2 leading-tight">{product.name}</h1>
             
-            {/* --- NEW: Short description placed here --- */}
             <p className="text-sm text-gray-500 mb-3">{product.description}</p>
             
             <div className="flex items-center mb-4">
@@ -107,7 +116,6 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = () => {
               </div>
             ) : (<p className="text-red-500 font-semibold text-lg">Currently Out of Stock</p>)}
             
-            {/* --- NEW: "VIEW MORE" RICH DETAILS SECTION --- */}
             {product.productDetails && (
               <div className="border-t pt-6">
                 <h2 className="text-xl font-bold mb-2 text-gray-800">About This Item</h2>
@@ -120,7 +128,6 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = () => {
                       </ul>
                     </div>
                   ))}
-                  {/* This fade-out effect only shows when content is collapsed */}
                   {!isExpanded && <div className="absolute bottom-0 left-0 w-full h-16 bg-gradient-to-t from-white to-transparent"></div>}
                 </div>
                 <button onClick={() => setIsExpanded(!isExpanded)} className="text-amazon-yellow font-semibold mt-2 hover:underline">
@@ -131,7 +138,6 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = () => {
           </div>
         </div>
 
-        {/* --- NEW: RELATED PRODUCTS SECTION --- */}
         {relatedProducts.length > 0 && (
           <div className="border-t mt-12 pt-8">
             <h2 className="text-2xl font-bold mb-6 text-center text-gray-800">You May Also Like</h2>
@@ -143,7 +149,6 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = () => {
           </div>
         )}
         
-        {/* --- RESTORED: ADDITIONAL INFORMATION SECTION --- */}
         <div className="border-t mt-12 pt-8">
             <h2 className="text-2xl font-bold mb-4 text-center text-gray-800">Additional Information</h2>
             <div className="max-w-md mx-auto text-sm text-gray-600 space-y-3">

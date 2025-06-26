@@ -3,6 +3,9 @@ import { Link } from 'react-router-dom';
 import { Product } from '../types';
 import StarRating from './StarRating';
 import { CartContext } from '../context/CartContext';
+// --- ADDITION ---
+// This line was added to use the notification library.
+import toast from 'react-hot-toast';
 
 interface ProductCardProps {
   product: Product;
@@ -11,9 +14,13 @@ interface ProductCardProps {
 const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   const { addToCart } = useContext(CartContext);
 
+  // --- MODIFICATION ---
+  // The handleAddToCart function was updated to use 'toast' instead of 'alert'.
   const handleAddToCart = () => {
     addToCart(product, 1);
-    alert(`${product.name} has been added to your cart!`);
+    toast.success(`${product.name} has been added to your cart!`, {
+      position: "bottom-center",
+    });
   };
 
   return (
